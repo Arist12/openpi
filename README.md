@@ -21,15 +21,19 @@ This is an experiment: $\pi_0$ was developed for our own robots, which differ fr
 
 ## Requirements
 
-To run the models in this repository, you will need an NVIDIA GPU with at least the following specifications. These estimations assume a single GPU, but you can also use multiple GPUs with model parallelism to reduce per-GPU memory requirements by configuring `fsdp_devices` in the training config. Please also note that the current training script does not yet support multi-node training.
+To run the models in this repository, you will need a GPU with at least the following specifications. Both **NVIDIA** and **AMD** GPUs are supported. These estimations assume a single GPU, but you can also use multiple GPUs with model parallelism to reduce per-GPU memory requirements by configuring `fsdp_devices` in the training config.
 
-| Mode               | Memory Required | Example GPU        |
-| ------------------ | --------------- | ------------------ |
-| Inference          | > 8 GB          | RTX 4090           |
-| Fine-Tuning (LoRA) | > 22.5 GB       | RTX 4090           |
-| Fine-Tuning (Full) | > 70 GB         | A100 (80GB) / H100 |
+| Mode               | Memory Required | Example NVIDIA GPU  | Example AMD GPU      |
+| ------------------ | --------------- | ------------------- | -------------------- |
+| Inference          | > 8 GB          | RTX 4090            | MI-210 / MI-250      |
+| Fine-Tuning (LoRA) | > 22.5 GB       | RTX 4090            | MI-250               |
+| Fine-Tuning (Full) | > 70 GB         | A100 (80GB) / H100  | MI-300X              |
 
 The repo has been tested with Ubuntu 22.04, we do not currently support other operating systems.
+
+**GPU Support:**
+- **NVIDIA**: CUDA 12+ with compatible drivers
+- **AMD**: ROCm 6.0+ (tested with ROCm 7.0 on MI-300X)
 
 ## Installation
 
@@ -51,7 +55,24 @@ GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 
 NOTE: `GIT_LFS_SKIP_SMUDGE=1` is needed to pull LeRobot as a dependency.
 
-**Docker**: As an alternative to uv installation, we provide instructions for installing openpi using Docker. If you encounter issues with your system setup, consider using Docker to simplify installation. See [Docker Setup](docs/docker.md) for more details.
+### AMD ROCm Setup
+
+For AMD GPUs (MI-200, MI-300 series), install ROCm-compatible dependencies:
+
+```bash
+# Install ROCm-compatible PyTorch (check https://pytorch.org for latest ROCm version)
+pip install torch --index-url https://download.pytorch.org/whl/rocm6.2
+
+# Install JAX with ROCm support
+pip install jax[rocm]
+
+# Install remaining openpi dependencies
+pip install -e .
+```
+
+PyTorch's ROCm backend exposes AMD GPUs through the `torch.cuda` API, so most code works without changes. The `torch.cuda.is_available()` call returns `True` on ROCm, and `torch.version.hip` indicates the HIP/ROCm version.
+
+**Docker**: As an alternative to uv installation, we provide instructions for installing openpi using Docker. If you encounter issues with your system setup, consider using Docker to simplify installation. See [Docker Setup](docs/docker.md) for more details. ROCm Dockerfiles are also available (e.g., `examples/libero/Dockerfile.rocm`).
 
 
 
@@ -204,7 +225,10 @@ openpi now provides PyTorch implementations of π₀ and π₀.₅ models alongs
 
 3. Apply the transformers library patches:
    ```bash
+   # For uv/pip venv (adjust Python version as needed):
    cp -r ./src/openpi/models_pytorch/transformers_replace/* .venv/lib/python3.11/site-packages/transformers/
+   # For system Python or ROCm environments:
+   # cp -r ./src/openpi/models_pytorch/transformers_replace/* $(python3 -c "import transformers; import os; print(os.path.dirname(transformers.__file__))")/
    ```
 
 This overwrites several files in the transformers library with necessary model changes: 1) supporting AdaRMS, 2) correctly controlling the precision of activations, and 3) allowing the KV cache to be used without being updated.
@@ -317,7 +341,8 @@ We will collect common issues and their solutions here. If you encounter an issu
 | Policy server connection errors           | Check that the server is running and listening on the expected port. Verify network connectivity and firewall settings between client and server.                                            |
 | Missing norm stats error when training    | Run `scripts/compute_norm_stats.py` with your config name before starting training.                                                                                                          |
 | Dataset download fails                    | Check your internet connection. For HuggingFace datasets, ensure you're logged in (`huggingface-cli login`).                                                                                 |
-| CUDA/GPU errors                           | Verify NVIDIA drivers are installed correctly. For Docker, ensure nvidia-container-toolkit is installed. Check GPU compatibility. You do NOT need CUDA libraries installed at a system level --- they will be installed via uv. You may even want to try *uninstalling* system CUDA libraries if you run into CUDA issues, since system libraries can sometimes cause conflicts. |
+| CUDA/GPU errors (NVIDIA)                  | Verify NVIDIA drivers are installed correctly. For Docker, ensure nvidia-container-toolkit is installed. Check GPU compatibility. You do NOT need CUDA libraries installed at a system level --- they will be installed via uv. You may even want to try *uninstalling* system CUDA libraries if you run into CUDA issues, since system libraries can sometimes cause conflicts. |
+| ROCm/GPU errors (AMD)                     | Verify ROCm is installed correctly (`rocm-smi` should show your GPUs). Ensure you have ROCm-compatible PyTorch (`pip install torch --index-url https://download.pytorch.org/whl/rocm6.2`). For Docker, use `--device=/dev/kfd --device=/dev/dri --group-add video` instead of `--gpus all`. |
 | Import errors when running examples       | Make sure you've installed all dependencies with `uv sync`. Some examples may have additional requirements listed in their READMEs.                    |
 | Action dimensions mismatch                | Verify your data processing transforms match the expected input/output dimensions of your robot. Check the action space definitions in your policy classes.                                  |
 | Diverging training loss                            | Check the `q01`, `q99`, and `std` values in `norm_stats.json` for your dataset. Certain dimensions that are rarely used can end up with very small `q01`, `q99`, or `std` values, leading to huge states and actions after normalization. You can manually adjust the norm stats as a workaround. |
