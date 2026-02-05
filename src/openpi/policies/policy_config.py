@@ -63,11 +63,12 @@ def create_trained_policy(
             raise ValueError("Asset id is required to load norm stats.")
         norm_stats = _checkpoints.load_norm_stats(checkpoint_dir / "assets", data_config.asset_id)
 
-    # Determine the device to use for PyTorch models
+    # Determine the device to use for PyTorch models (works for both NVIDIA CUDA and AMD ROCm)
     if is_pytorch and pytorch_device is None:
         try:
             import torch
 
+            # torch.cuda.is_available() returns True for both NVIDIA (CUDA) and AMD (ROCm/HIP) GPUs
             pytorch_device = "cuda" if torch.cuda.is_available() else "cpu"
         except ImportError:
             pytorch_device = "cpu"

@@ -42,6 +42,7 @@ import wandb
 
 import openpi.models.pi0_config
 import openpi.models_pytorch.pi0_pytorch
+import openpi.shared.gpu_utils as _gpu
 import openpi.shared.normalize as _normalize
 import openpi.training.config as _config
 import openpi.training.data_loader as _data
@@ -95,7 +96,7 @@ def setup_ddp():
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     use_ddp = world_size > 1
     if use_ddp and not torch.distributed.is_initialized():
-        backend = "nccl" if torch.cuda.is_available() else "gloo"
+        backend = _gpu.get_ddp_backend()
         torch.distributed.init_process_group(backend=backend, init_method="env://")
 
         # Set up debugging environment variables for DDP issues
@@ -265,9 +266,7 @@ def load_checkpoint(model, optimizer, checkpoint_dir, device):
             gc.collect()
             logging.error(f"Out of memory error while loading checkpoint: {e!s}")
             log_memory_usage(device, latest_step, "after_oom_error")
-            raise RuntimeError(
-                "Out of memory while loading checkpoint. Try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
-            ) from e
+            raise RuntimeError(_gpu.get_oom_hint()) from e
         raise
 
 
@@ -420,14 +419,8 @@ def train_loop(config: _config.TrainConfig):
     if is_main and torch.cuda.is_available():
         log_memory_usage(device, 0, "after_model_creation")
 
-    # Enable memory optimizations for large-scale training
-    if world_size >= 8:
-        torch.backends.cudnn.benchmark = True
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-        # Set memory allocation configuration
-        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128,expandable_segments:True"
-        logging.info("Enabled memory optimizations for 8+ GPU training")
+    # Enable vendor-appropriate memory optimizations for large-scale training
+    _gpu.configure_memory_optimizations(world_size)
 
     if use_ddp:
         model = torch.nn.parallel.DistributedDataParallel(

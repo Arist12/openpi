@@ -3,7 +3,7 @@ name = "openpi"
 version = "0.1.0"
 description = "Physical Intelligence open source repo"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 dependencies = [
     "augmax>=0.3.4",
@@ -15,7 +15,7 @@ dependencies = [
     "fsspec[gcs]>=2024.6.0",
     "gym-aloha>=0.1.1",
     "imageio>=2.36.1",
-    "jax[cuda12]==0.5.3",
+    "jax>=0.5.0",
     "jaxtyping==0.2.36",
     "lerobot",
     "ml_collections==1.0.0",
@@ -26,7 +26,7 @@ dependencies = [
     "orbax-checkpoint==0.11.13",
     "pillow>=11.0.0",
     "sentencepiece>=0.2.0",
-    "torch==2.7.1",
+    "torch>=2.7.1",
     "tqdm-loggable>=0.2",
     "typing-extensions>=4.12.2",
     "tyro>=0.9.5",
@@ -51,7 +51,16 @@ dev = [
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.5",
     "matplotlib>=3.10.0",
+    "pynvml>=12.0.0; platform_machine=='x86_64'",
+]
+cuda = [
+    "jax[cuda12]>=0.5.0",
+    "torch>=2.7.1",
     "pynvml>=12.0.0",
+]
+rocm = [
+    "jax[rocm]>=0.5.0",
+    "torch>=2.7.1",
 ]
 rlds = [
     "dlimp",
@@ -72,7 +81,7 @@ members = ["packages/*"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py310"
 extend-exclude = ["docker", "third_party", "src/openpi/models_pytorch/transformers_replace/*"]
 
 [tool.ruff.lint]
