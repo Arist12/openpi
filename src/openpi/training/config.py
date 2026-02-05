@@ -1,5 +1,7 @@
 """See _CONFIGS for the list of available configs."""
 
+from __future__ import annotations
+
 import abc
 from collections.abc import Sequence
 import dataclasses

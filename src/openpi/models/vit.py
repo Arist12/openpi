@@ -13,6 +13,8 @@
 # limitations under the License.
 """ViT implementation adapted from https://github.com/google-research/vision_transformer/blob/main/vit_jax/models_vit.py."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import Any
 

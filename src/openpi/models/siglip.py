@@ -14,6 +14,8 @@
 
 """A refactored and simplified ViT adoptation for Pi, taken from big_vision."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 
 import flax.linen as nn

@@ -5,6 +5,8 @@ Thus, we provide a data loader example here that uses the RLDS data format.
 The data loader also applies a few DROID-specific data filters / transformations.
 """
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 import dataclasses
 from enum import Enum

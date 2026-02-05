@@ -17,6 +17,8 @@ Gemma model implementation from big_vision/models/ppp/gemma.py (with small modif
 Used for FAST autoregressive policies.
 """
 
+from __future__ import annotations
+
 import dataclasses
 from typing import Literal, TypeAlias
 

@@ -25,6 +25,8 @@ We follow this einsum axis naming convention:
   D: d_model ("features")
 """
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 import dataclasses
 from typing import Literal, TypeAlias
