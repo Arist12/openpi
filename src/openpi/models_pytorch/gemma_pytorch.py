@@ -85,6 +85,10 @@ class PaliGemmaWithExpertModel(nn.Module):
                 param.data = param.data.to(dtype=torch.float32)
 
     def embed_image(self, image: torch.Tensor):
+        # Ensure NCHW format: PaliGemma's vision tower expects [B, C, H, W]
+        if image.ndim == 4 and image.shape[-1] in (1, 3):
+            # Input is [B, H, W, C] -> convert to [B, C, H, W]
+            image = image.permute(0, 3, 1, 2)
         return self.paligemma.model.get_image_features(image)
 
     def embed_language_tokens(self, tokens: torch.Tensor):
