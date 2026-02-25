@@ -11,7 +11,7 @@ IMMUTABLE: Do NOT change num_steps, batch_size, iterations, or warmup.
 import os
 import sys
 
-sys.path.insert(0, "/workspace/openpi-amd/src")
+sys.path.insert(0, "/sgl-workspace/openpi/src")
 
 import time
 import numpy as np
@@ -56,7 +56,7 @@ def main():
     print("PI0 POLICY INFERENCE BENCHMARK")
     print("=" * 70)
 
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:7")
     print(f"Device: {torch.cuda.get_device_name(0)}")
     print(f"PyTorch: {torch.__version__}")
 
